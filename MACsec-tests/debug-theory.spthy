@@ -1,0 +1,18 @@
+theory debug-macsec-theory
+begin
+
+section{* Tester for MACsec stuff. *}
+
+/*
+ * Protocol:	MACsec
+ * Modeler: 	Ryan Williams
+ * Date: 	    May 2023
+ *
+ * Status: 	    In-progress
+ */
+
+ // Client generates a fresh symmettric key, k, and encrypts with pulic key, pkS (from server, S).
+ C -> S: aenc(k, pkS)   // Asymmetric encryption: sending key to server
+ C <- S: h(k)           // Server confirms by sending hash of key back to client.
+
+end
