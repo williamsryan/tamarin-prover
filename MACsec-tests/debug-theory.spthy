@@ -1,4 +1,4 @@
-theory debug-macsec-theory
+theory MACsec_Debug
 begin
 
 section{* Tester for MACsec stuff. *}
@@ -11,8 +11,61 @@ section{* Tester for MACsec stuff. *}
  * Status: 	    In-progress
  */
 
- // Client generates a fresh symmettric key, k, and encrypts with pulic key, pkS (from server, S).
- C -> S: aenc(k, pkS)   // Asymmetric encryption: sending key to server
- C <- S: h(k)           // Server confirms by sending hash of key back to client.
+ builtins: hashing, asymmetric-encryption, diffie-hellman, signing
+
+ /*
+  * Simple protocol example with just two messages.
+  * Written in Alice-and-Bob notation.
+  *
+  * Client generates a fresh symmettric key, k, and encrypts with pulic key, pkS (from server, S).
+  *
+  * C -> S: aenc(k, pkS)   :: Asymmetric encryption: sending key to server.
+  * C <- S: h(k)           :: Server confirms by sending hash of key back to client.
+  *
+  */
+
+  /*
+   * Protocol and environment are modeled using multiset rewriting rules.
+   * Rules operate on system state expressed as a multiset (i.e., a bag) of facts.
+   * These facts are predicates that store state information.
+   * 
+   * Rules have a premise and conclusion separated by -->.
+   * Executing the rule requires that all facts in the premise are present in
+   * the current state, and the facts in the conclusion will be added to the state.
+   *
+   */
+
+   // Registration of public key.
+   rule Register_pk:
+        [ Fr(~ltk) ] // Premise: Fr fact is a built-in fact that denotes a freshly-generated name.
+    -->
+        [ !Ltk($A, ~ltk), !Pk($A, pk(~ltk)) ]
+    
+   // Variable types:
+   // ~x denotes x:fresh
+   // $x denotes x:pub
+   // #i denotes i:temporal
+   // m denotes m:msg
+
+   // Adversary model allows someone to read a public-key db entry and send it
+   // to the network using built-in fact Out, which denotes sending a message
+   // to the network. 
+   rule Get_pk:
+        [ !Pk(A, pubkey) ]
+    -->
+        [ Out(pubkey) ]
+    
+    
+    // Model the Alice-and-Bob protocol itself.
+    // Start a new thread executing client role, choosing
+    // the server non-deterministically.
+    rule Client_1:
+        [ Fr(~k) // Choose fresh key.
+        , !Pk($S, pkS) // Lookup public-key of server.
+        ]
+    -->
+        [ Client_1( $S, ~k ) // Store the server and key.
+        , Out( aenc(~k, pkS) ) // Send the encrypted session key to server.
+        ]
 
 end
