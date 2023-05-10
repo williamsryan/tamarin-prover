@@ -1,0 +1,76 @@
+theory dev_protocol
+begin
+
+section{* Tester for Tamarin models. *}
+
+/*
+ * Protocol:	Dummy
+ * Modeler: 	Ryan Williams
+ * Date: 	    May 2023
+ *
+ * Status: 	    DEVELOPMENTAL
+ */
+
+ // Variable types:
+ // ~x denotes x:fresh
+ // $x denotes x:pub
+ // #i denotes i:temporal
+ // m denotes m:msg
+
+ builtins: diffie-hellman
+
+ /////////////////////////////////  Rules   /////////////////////////////////
+
+ rule create_identities:
+    // Every time you create an identity, send public key over network.
+    // [] : initial state (premise) generates random private key (value).
+    // A : client, server, etc. (something public, doesn't matter).
+    let
+        pubkey = 'g'^~privkey // Const, 'g', to power of private key (usable from d-h builtin).
+    in
+    // ! marks those facts persistent to continue in conclusion.
+    [Fr(~privkey)] --> [!Identity($A, ~privkey, pubkey), Out(pubkey)] // Facts always start uppercase.
+
+ // Start with sending message to server.
+ rule client_send:
+    [!Identity($client, ~clientprivkey, clientpubkey), !Identity($server, ~serverprivkey, serverpubkey)]
+    -->
+    // From those two identities, client now sends message.
+    [Out(<'client_hello', $client, $server, clientpubkey>)]
+
+ rule server_response:
+    let
+        sessionkey = clientpubkey^~serverprivkey
+    in
+    // Remove $ from client, as we don't want to restrict adversary.
+    // This means we read the message from _any_ client.
+    [!Identity($server, ~serverprivkey, serverpubkey), In(<'client_hello', client, $server, clientpubkey>)]
+    --[ServerCreateSession($server, client, sessionkey)]->
+    // Create a session and send response.
+    [Session($server, client, sessionkey), Out(<'server_hello', $server, client, serverpubkey>)]
+
+ rule client_receive:
+    let
+        sessionkey = serverpubkey^~clientprivkey
+    in
+    [!Identity($client, ~clientprivkey, clientpubkey), In(<'server_hello', server, $client, serverpubkey>)]
+    --[ClientCreateSession($client, server, sessionkey)]->
+    [Session($client, server, sessionkey)]
+
+  /////////////////////////////////  Lemmas   /////////////////////////////////
+
+  lemma MITM:
+    "
+    All client server sessionkey1 sessionkey2 #i #j.
+      (
+        ClientCreateSession(client, server, sessionkey1) @ #i &
+        ServerCreateSession(server, client, sessionkey2) @ #j &
+        #j < #i &
+        not(client = server)
+      )
+      // If above true, adversary shouldn't learn session key.
+      // "There exists time k where adversary learns session key".
+      ==> not(Ex #k1 #k2 . K(sessionkey1) @ #k1 & K(sessionkey2) @ #k2)
+    "
+
+end

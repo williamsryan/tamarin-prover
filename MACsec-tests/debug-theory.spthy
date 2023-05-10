@@ -8,7 +8,7 @@ section{* Tester for MACsec stuff. *}
  * Modeler: 	Ryan Williams
  * Date: 	    May 2023
  *
- * Status: 	    In-progress
+ * Status: 	    DEVELOPMENTAL
  */
 
  builtins: hashing, asymmetric-encryption, diffie-hellman, signing
