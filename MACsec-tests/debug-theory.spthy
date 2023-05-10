@@ -13,6 +13,8 @@ section{* Tester for MACsec stuff. *}
 
  builtins: hashing, asymmetric-encryption, diffie-hellman, signing
 
+ functions: h1/2 // Define a hash function, h1, that takes two parameters and is one-way.
+
  /*
   * Simple protocol example with just two messages.
   * Written in Alice-and-Bob notation.
@@ -33,13 +35,15 @@ section{* Tester for MACsec stuff. *}
    * Executing the rule requires that all facts in the premise are present in
    * the current state, and the facts in the conclusion will be added to the state.
    *
+   * Rules are essentially state transitions.
+   *
    */
 
    // Registration of public key.
    rule Register_pk:
-        [ Fr(~ltk) ] // Premise: Fr fact is a built-in fact that denotes a freshly-generated name.
+        [ Fr(~ltk) ] // State (called premise): Fr fact is a built-in fact that denotes a freshly-generated name.
     -->
-        [ !Ltk($A, ~ltk), !Pk($A, pk(~ltk)) ]
+        [ !Ltk($A, ~ltk), !Pk($A, pk(~ltk)) ]   // Can transition to these states (conclusion).
     
    // Variable types:
    // ~x denotes x:fresh
