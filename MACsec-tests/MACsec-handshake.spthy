@@ -11,6 +11,10 @@ section{* MACsec handshake and lemmas *}
  * Status: 	    DEVELOPMENTAL
  */
 
+// Not using these two yet. 
+functions: KDF/1
+builtins: symmetric-encryption
+
 /////////////////////////////////  Roles   ////////////////////////////////////////////////////////
 role supplicant
 role authenticator
