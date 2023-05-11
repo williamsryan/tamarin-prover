@@ -86,8 +86,8 @@ rule EAPOLKeyAck_can_be_sent:
     [ sent(EAPOLKeyAck) ]
 
 /////////////////////////////////  Lemmas (attacker model)   //////////////////////////////////////
-// attacker can intercept supplicant->authenticator, authenticator->supplicant;
-// attacker cannot decrypt encrypted messages;
+// (1) attacker can intercept supplicant->authenticator, authenticator->supplicant;
+// (2) attacker cannot decrypt encrypted messages;
 
 // Prove that after a successful handshake (defined above), the session key
 // is established an only known to supplpicant and authenticator.
@@ -106,5 +106,20 @@ lemma MACsec_key_established:
       // there are no other shared secret keys established during the protocol
       !shared(secret_key(other_key))
     ]
+
+// Checking another way to validate that adversary can't learn session keys.
+lemma MITM:
+    "
+    All client server sessionkey1 sessionkey2 #i #j.
+      (
+        ClientCreateSession(client, server, sessionkey1) @ #i &
+        ServerCreateSession(server, client, sessionkey2) @ #j &
+        #j < #i &
+        not(client = server)
+      )
+      // If above true, adversary shouldn't learn session key.
+      // "There exists time k where adversary learns session key".
+      ==> not(Ex #k1 #k2 . K(sessionkey1) @ #k1 & K(sessionkey2) @ #k2)
+    "
 
 end
