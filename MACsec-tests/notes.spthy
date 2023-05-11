@@ -1,0 +1,34 @@
+role client
+role server
+
+// messages
+message ClientHello(nonce_c)
+message ServerHello(nonce_s, certificate, public_key_s)
+message ClientKeyExchange(secret)
+message ServerKeyExchange(secret)
+message Finished
+
+// rules
+rule ClientHello_can_be_sent:
+    [ Fr(~nonce_c), !sent(ClientHello(~nonce_c)) ] 
+    --[ send(client, server, ClientHello(nonce_c)) ]--> 
+    [ sent(ClientHello(nonce_c)) ]
+
+rule ServerHello_can_be_received:
+    [ recv(server, client, ServerHello(~nonce_s, ~certificate, ~public_key_s)), sent(ClientHello(nonce_c)) ]
+    --[ Fr(~secret) ]--> 
+    [ sent(ServerHello(nonce_s, certificate, public_key_s)), send(server, client, ServerKeyExchange(secret)) ]
+
+rule ClientKeyExchange_can_be_sent:
+    [ sent(ServerHello(nonce_s, certificate, public_key_s)), !sent(ClientKeyExchange(~secret)) ]
+    --[ send(client, server, ClientKeyExchange(secret)) ]--> 
+    [ sent(ClientKeyExchange(secret)) ]
+
+rule ServerKeyExchange_can_be_received:
+    [ recv(server, client, ServerKeyExchange(secret)), sent(ClientKeyExchange(secret)) ]
+    --[ Fr(~secret), !sent(Finished) ]--> 
+    [ send(server, client, Finished), sent(Finished) ]
+
+// attacker model
+attacker can intercept client->server, server->client;
+attacker cannot decrypt encrypted messages;
