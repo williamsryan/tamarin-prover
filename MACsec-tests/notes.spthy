@@ -1,34 +1,63 @@
-role client
-role server
+/////////////////////////////////  Roles   ////////////////////////////////////////////////////////
+role supplicant
+role authenticator
 
-// messages
-message ClientHello(nonce_c)
-message ServerHello(nonce_s, certificate, public_key_s)
-message ClientKeyExchange(secret)
-message ServerKeyExchange(secret)
-message Finished
+/////////////////////////////////  Message types   ////////////////////////////////////////////////
+message EAPOLStart                  // Message sent by supplicant to initiate protocol handshake
+message EAPOLIdentity(identity)     // Message sent by supplicant to authenticate itself
+message EAPOLResponse(response)     // Message sent by authenticator in response to EAPOLIdentity message
+message EAPOLKey(                   // Message containing session key and other keying material
+    key_descriptor,                 // Identifies the type of session key
+    key_information,                // Specifies key usage and other parameters
+    key_length,                     // Length of session key
+    key_iv,                         // Initialization vector for session key
+    key_signature                   // Message authentication code for keying material
+)
+message EAPOLKeyConfirmation        // Message sent by supplicant to confirm receipt of session key
+message EAPOLKeyAck                 // Message sent by authenticator to confirm receipt of EAPOLKeyConfirmation message
 
-// rules
-rule ClientHello_can_be_sent:
-    [ Fr(~nonce_c), !sent(ClientHello(~nonce_c)) ] 
-    --[ send(client, server, ClientHello(nonce_c)) ]--> 
-    [ sent(ClientHello(nonce_c)) ]
+/////////////////////////////////  Rules   ////////////////////////////////////////////////////////
+rule EAPOLStart_can_be_sent:
+    // check that EAPOLStart message has not already been sent
+    [ !sent(EAPOLStart) ]
+    // send EAPOLStart message from supplicant to authenticator
+    --[ send(supplicant, authenticator, EAPOLStart) ]-->
+    // mark EAPOLStart message as sent
+    [ sent(EAPOLStart) ]
 
-rule ServerHello_can_be_received:
-    [ recv(server, client, ServerHello(~nonce_s, ~certificate, ~public_key_s)), sent(ClientHello(nonce_c)) ]
-    --[ Fr(~secret) ]--> 
-    [ sent(ServerHello(nonce_s, certificate, public_key_s)), send(server, client, ServerKeyExchange(secret)) ]
+rule EAPOLIdentity_can_be_sent:
+    // check that EAPOLStart message has been sent and EAPOLIdentity message has not already been sent
+    [ sent(EAPOLStart), !sent(EAPOLIdentity(~identity)) ]
+    // send EAPOLIdentity message from supplicant to authenticator, containing the supplicant's identity
+    --[ send(supplicant, authenticator, EAPOLIdentity(identity)) ]-->
+    // mark EAPOLIdentity message as sent
+    [ sent(EAPOLIdentity(identity)) ]
 
-rule ClientKeyExchange_can_be_sent:
-    [ sent(ServerHello(nonce_s, certificate, public_key_s)), !sent(ClientKeyExchange(~secret)) ]
-    --[ send(client, server, ClientKeyExchange(secret)) ]--> 
-    [ sent(ClientKeyExchange(secret)) ]
+rule EAPOLResponse_can_be_received:
+    // check that EAPOLResponse message has been received and EAPOLIdentity message has been sent
+    [ recv(authenticator, supplicant, EAPOLResponse(~response)), sent(EAPOLIdentity(identity)) ]
+    // do nothing
+    --[ ]-->
+    // continue
 
-rule ServerKeyExchange_can_be_received:
-    [ recv(server, client, ServerKeyExchange(secret)), sent(ClientKeyExchange(secret)) ]
-    --[ Fr(~secret), !sent(Finished) ]--> 
-    [ send(server, client, Finished), sent(Finished) ]
+rule EAPOLKey_can_be_sent:
+    // check that EAPOLIdentity message has been sent and EAPOLKey message has not already been sent
+    [ sent(EAPOLIdentity(identity)), !sent(EAPOLKey(~key_descriptor, ~key_information, ~key_length, ~key_iv, ~key_signature)) ]
+    // send EAPOLKey message from supplicant to authenticator, containing the session key and other keying material
+    --[ send(supplicant, authenticator, EAPOLKey(key_descriptor, key_information, key_length, key_iv, key_signature)) ]-->
+    // mark EAPOLKey message as sent
+    [ sent(EAPOLKey(key_descriptor, key_information, key_length, key_iv, key_signature)) ]
 
-// attacker model
-attacker can intercept client->server, server->client;
+rule EAPOLKeyConfirmation_can_be_received:
+    // check that EAPOLKeyConfirmation message has been received and EAPOLKey message has been sent
+    [ recv(authenticator, supplicant, EAPOLKeyConfirmation), sent(EAPOLKey(key_descriptor, key_information, key_length, key_iv, key_signature)) ]
+    // do nothing
+    --[ ]-->
+    // continue
+
+rule EAPOLKeyAck_can_be_sent:
+    // check that EAPOLKeyConfirmation message has been sent and E
+
+/////////////////////////////////  Lemmas (attacker model)   //////////////////////////////////////
+attacker can intercept supplicant->authenticator, authenticator->supplicant;
 attacker cannot decrypt encrypted messages;
