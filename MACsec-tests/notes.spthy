@@ -1,3 +1,16 @@
+theory MACsec_Debug
+begin
+
+section{* MACsec handshake and lemmas *}
+
+/*
+ * Protocol:	MACsec Handshake
+ * Modeler: 	Ryan Williams
+ * Date: 	    May 2023
+ *
+ * Status: 	    DEVELOPMENTAL
+ */
+
 /////////////////////////////////  Roles   ////////////////////////////////////////////////////////
 role supplicant
 role authenticator
@@ -16,12 +29,18 @@ message EAPOLKey(                   // Message containing session key and other 
 message EAPOLKeyConfirmation        // Message sent by supplicant to confirm receipt of session key
 message EAPOLKeyAck                 // Message sent by authenticator to confirm receipt of EAPOLKeyConfirmation message
 
+// Variable types:
+// ~x denotes x:fresh
+// $x denotes x:pub
+// #i denotes i:temporal
+// m denotes m:msg
+
 /////////////////////////////////  Rules   ////////////////////////////////////////////////////////
 rule EAPOLStart_can_be_sent:
     // check that EAPOLStart message has not already been sent
     [ !sent(EAPOLStart) ]
     // send EAPOLStart message from supplicant to authenticator
-    --[ send(supplicant, authenticator, EAPOLStart) ]-->
+    --[ send(supplicant, authenticator, EAPOLStart) ]->
     // mark EAPOLStart message as sent
     [ sent(EAPOLStart) ]
 
@@ -29,7 +48,7 @@ rule EAPOLIdentity_can_be_sent:
     // check that EAPOLStart message has been sent and EAPOLIdentity message has not already been sent
     [ sent(EAPOLStart), !sent(EAPOLIdentity(~identity)) ]
     // send EAPOLIdentity message from supplicant to authenticator, containing the supplicant's identity
-    --[ send(supplicant, authenticator, EAPOLIdentity(identity)) ]-->
+    --[ send(supplicant, authenticator, EAPOLIdentity(identity)) ]->
     // mark EAPOLIdentity message as sent
     [ sent(EAPOLIdentity(identity)) ]
 
@@ -37,14 +56,14 @@ rule EAPOLResponse_can_be_received:
     // check that EAPOLResponse message has been received and EAPOLIdentity message has been sent
     [ recv(authenticator, supplicant, EAPOLResponse(~response)), sent(EAPOLIdentity(identity)) ]
     // do nothing
-    --[ ]-->
+    --[ ]->
     // continue
 
 rule EAPOLKey_can_be_sent:
     // check that EAPOLIdentity message has been sent and EAPOLKey message has not already been sent
     [ sent(EAPOLIdentity(identity)), !sent(EAPOLKey(~key_descriptor, ~key_information, ~key_length, ~key_iv, ~key_signature)) ]
     // send EAPOLKey message from supplicant to authenticator, containing the session key and other keying material
-    --[ send(supplicant, authenticator, EAPOLKey(key_descriptor, key_information, key_length, key_iv, key_signature)) ]-->
+    --[ send(supplicant, authenticator, EAPOLKey(key_descriptor, key_information, key_length, key_iv, key_signature)) ]->
     // mark EAPOLKey message as sent
     [ sent(EAPOLKey(key_descriptor, key_information, key_length, key_iv, key_signature)) ]
 
@@ -52,12 +71,36 @@ rule EAPOLKeyConfirmation_can_be_received:
     // check that EAPOLKeyConfirmation message has been received and EAPOLKey message has been sent
     [ recv(authenticator, supplicant, EAPOLKeyConfirmation), sent(EAPOLKey(key_descriptor, key_information, key_length, key_iv, key_signature)) ]
     // do nothing
-    --[ ]-->
+    --[ ]->
     // continue
+    [ ]
 
 rule EAPOLKeyAck_can_be_sent:
-    // check that EAPOLKeyConfirmation message has been sent and E
+    // check that EAPOLKeyConfirmation message has been sent
+    [ sent(EAPOLKeyConfirmation), !sent(EAPOLKeyAck) ]
+    --[ send(supplicant, authenticator, EAPOLKeyAck) ]->
+    [ sent(EAPOLKeyAck) ]
 
 /////////////////////////////////  Lemmas (attacker model)   //////////////////////////////////////
-attacker can intercept supplicant->authenticator, authenticator->supplicant;
-attacker cannot decrypt encrypted messages;
+// attacker can intercept supplicant->authenticator, authenticator->supplicant;
+// attacker cannot decrypt encrypted messages;
+
+// Prove that after a successful handshake (defined above), the session key
+// is established an only known to supplpicant and authenticator.
+lemma MACsec_key_established:
+    // assume that the protocol handshake is successfully completed
+    [ fresh_nonce(supplicant.nonce), fresh_nonce(authenticator.nonce),
+      sent(EAPOLStart), sent(EAPOLIdentity(identity)), recv(authenticator, supplicant, EAPOLResponse(response)),
+      sent(EAPOLKey(key_descriptor, key_information, key_length, key_iv, key_signature)),
+      recv(authenticator, supplicant, EAPOLKeyConfirmation), sent(EAPOLKeyAck) ]
+    // prove that the session key is established and known only to the supplicant and authenticator
+    ==>
+    [ // the session key is shared between the supplicant and authenticator
+      shared(secret_key(key)),
+      // the session key is secret to the supplicant and authenticator
+      secret(key, supplicant), secret(key, authenticator),
+      // there are no other shared secret keys established during the protocol
+      !shared(secret_key(other_key))
+    ]
+
+end
