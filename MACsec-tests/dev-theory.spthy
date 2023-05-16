@@ -29,7 +29,9 @@ section{* Tester for Tamarin models. *}
         pubkey = 'g'^~privkey // Const, 'g', to power of private key (usable from d-h builtin).
     in
     // ! marks those facts persistent to continue in conclusion.
-    [Fr(~privkey)] --> [!Identity($A, ~privkey, pubkey), Out(pubkey)] // Facts always start uppercase.
+    [Fr(~privkey)]
+    -->
+    [!Identity($A, ~privkey, pubkey), Out(pubkey)] // Facts always start uppercase.
 
  // Start with sending message to server.
  rule client_send:
