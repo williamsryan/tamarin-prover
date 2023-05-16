@@ -41,14 +41,53 @@ section{* Tester for MACsec stuff. *}
     --[ preconfigure(~CAK) ]->
     [ !Cak($A, PSK), !Cak($B, PSK), !Ick($A, ICK), !Ick($B, ICK) ]
 
- rule sak_distribution:
+ rule nonce_distribution:
     let
     nonce = ~nonce,
     ntag = MAC(~nonce, ICK) // Verify this later.
     in
     [ Fr(~nonce), !Cak($A, PSK), !Cak($B, PSK), !Ick($A, ICK), !Ick($B, ICK) ]
     -->
-    [ !ntag, !Asak(KDF(~nonce, 'sak', ~CAK)), Out(!Ntag) ]
+    [ !ntag, !Asak(KDF(~nonce, 'sak', ~CAK)), Out(!ntag, ~nonce) ]
+
+ rule sak_derivation:
+   // Bob runs MAC function on nonce using ICK.
+   let
+   ntag_prime = MAC(~nonce, ICK)
+   in
+   [ !ntag, !Asak(KDF(~nonce, 'sak', ~CAK)), In(!ntag, ~nonce) ]
+   -->
+   [ !Bsak(KDF(~nonce, 'sak', ~CAK)) ]
+
+ rule sec_send:
+   // Bob sends encoded message back to Alice.
+   let
+   m = Fr(~m)
+   in
+   [ !Bsak(KDF(~nonce, 'sak', ~CAK)) ]
+   -->
+   [ Send($B, $A, senc(!Bsak, m)), Out(senc(!Bsak, m)) ]
+   //[ senc(!Bsak, m), Out(senc(!Bsak, m))]
+
+ rule sec_recv:
+   // Alice reads encoded message from Bob.
+   [ !Asak(KDF(~nonce, 'sak', ~CAK)), In(m) ]
+   -->
+   [ Receive($B, $A, sdec(!Asak, m)) ]
+
+ // Adversary rules.
+ rule reveal_session_a:
+   [ !Asak(...) ]
+   --[ SessionRevealA(sak) ]->
+   [ Out(asak) ]
+
+ rule reveal_session_b:
+   [ !Bsak(...) ]
+   --[ SessionRevealB(sak) ]->
+   [ Out(bsak) ]
+
+ rule reveal_cak:
+   [  ]
 
  // Key distribution rule.
 //  rule ks_sak_init:
@@ -107,5 +146,16 @@ section{* Tester for MACsec stuff. *}
 //         & not(Ex #r. LtkReveal(S) @ r)
 //     )
 //     "
+
+ lemma message_secrecy:
+   "
+   not(
+      Ex A B #i #j.
+         Asak @ #i & Bsak @ #j
+         & DY(sak) @ #j
+      & not(Ex #r. SessionRevealA(A) | SessionRevealB(B) @ r)
+      | (Ex #r. CakReveal(A) | CakReveal(B))
+   )
+   "
 
 end
