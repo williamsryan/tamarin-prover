@@ -10,17 +10,24 @@ section{* Tester for MACsec stuff. *}
  * Based on:    Component-Based Formal Analysis of 5G-AKA:
  *              Channel Assumptions and Session Confusion
  *
+ * Channels:    TODO
+ *
+ * Functions:   TODO
+ *
  * Modeler: 	Ryan Williams
  * Date: 	    May 2023
- *
  *
  * Status: 	    DEVELOPMENTAL
  *
  */
 
- builtins: hashing, asymmetric-encryption, diffie-hellman, signing
+ builtins:
+    multiset
 
- functions: h1/2 // Define a hash function, h1, that takes two parameters and is one-way.
+ functions:
+    h1/2,   // Define a hash function, h1, that takes two parameters and is one-way.
+    KDF/1   // TODO KDF function.
+
 
  // This is a standard, secure channel abstraction, as previously used in work 
  // by Basin, Radomirovic, and Schmid: Modeling Human Errors in Security Protocols
