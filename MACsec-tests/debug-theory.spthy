@@ -46,9 +46,9 @@ section{* Tester for MACsec stuff. *}
     nonce = ~nonce,
     ntag = MAC(~nonce, ICK) // Verify this later.
     in
-    [ Fr(~nonce) ]
+    [ Fr(~nonce), !Cak($A, PSK), !Cak($B, PSK), !Ick($A, ICK), !Ick($B, ICK) ]
     -->
-    [ !Ntag(MAC(~nonce, !Aick)), !Asak(KDF(~nonce, 'sak', ~CAK)), Out(!Ntag) ]
+    [ !ntag, !Asak(KDF(~nonce, 'sak', ~CAK)), Out(!Ntag) ]
 
  // Key distribution rule.
 //  rule ks_sak_init:
