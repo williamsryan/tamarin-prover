@@ -146,15 +146,15 @@ section{* Tester for MACsec stuff. *}
 //     )
 //     "
 
-//  lemma message_secrecy:
-//    "
-//    not(
-//       Ex A B #i #j.
-//          Asak @ #i & Bsak @ #j
-//          & DY(sak) @ #j
-//       & not(Ex #r. SessionRevealA(A) | SessionRevealB(B) @ r)
-//       | (Ex #r. CakReveal(A) | CakReveal(B))
-//    )
-//    "
+ lemma message_secrecy:
+   "
+   not(
+      Ex A B #i #j.
+         Asak @ #i & Bsak @ #j
+         & DY(sak) @ #j
+      & not(Ex #r. SessionRevealA(A) | SessionRevealB(B) @ r)
+      | (Ex #r. CakReveal(A) | CakReveal(B))
+   )
+   "
 
 end
