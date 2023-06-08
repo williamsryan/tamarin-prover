@@ -1,0 +1,110 @@
+/*
+Simple MACsec Key Agreement Protocol
+======================================
+
+Authors:    Zachary Ratliff, Ryan Williams
+Date:       May 2023
+
+*/
+
+theory kselect
+begin
+
+builtins: symmetric-encryption
+functions: kdf/2, mac/2
+
+/* Configure the MACsec network to use a pre-shared CAK */
+rule Preconfigure:
+    let
+        kek = kdf('kek', ~cak)
+        ick = kdf('ick', ~cak)
+    in
+    [ Fr(~cak) ]
+  --[ Init(~cak, kek, ick) ]->
+    [ !AState($A, 'INIT', <~cak, kek, ick>) , !BState($B, 'INIT', <~cak, kek, ick>),
+      !IsConfigured($A, $B, <~cak, kek, ick>) ]
+
+/******************* Keyserver election messages *******************/
+rule Alice_ks_send_pa:
+    let
+        icvA = mac(~pA, ick)
+    in
+    [ Fr(~pA), !IsConfigured($A, $B, <~cak, kek, ick>) ]
+    --[ SendPA(<~pA, icvA>) ]->
+    [ Out(<~pA, icvA>) ]
+
+rule Bob_ks_recv_pa:
+    let
+        icvB = mac(~pB, ick)
+        icvA = mac(~pA, ick)
+    in
+    // Keyserver message (from Alice) needs to have been sent/readable to trigger here.
+    [ Fr(~pB), !BState($B, 'INIT', <~cak, kek, ick>), In(<~pA, icvA>) ]
+    --[ RecvPA(<~pA, icvA>) ]->
+    [ !BState($B, 'AWAITING_ELECTION', <~cak, kek, ick>), Out(<~pB, icvB>) ]
+
+rule Alice_ks_recv_pb:
+    let
+        icvB = mac(~pB, ick)
+    in
+    [ !AState($A, 'INIT', <~cak, kek, ick>), In(<~pB, icvB>) ]
+    --[ RecvPB(<~pB, icvB>) ]->
+    [ !AState($A, 'AWAITING_ELECTION', <~cak, kek, ick>) ]
+
+// Make Alice keyserver.
+rule Make_ks_desc_alice:
+    [ !AState($A, 'AWAITING_ELECTION', <~cak, kek, ick>), !BState($B, 'AWAITING_ELECTION', <~cak, kek, ick>) ]
+    --[ ElectAlice(<~cak, kek, ick>) ]->
+    [ !AState($A, 'IS_KS', <~cak, kek, ick>), !BState($B, 'READY', <~cak, kek, ick>) ]
+
+// Make Bob keyserver.
+rule Make_ks_desc_bob:
+    [ !AState($A, 'AWAITING_ELECTION', <~cak, kek, ick>), !BState($B, 'AWAITING_ELECTION', <~cak, kek, ick>) ]
+    --[ ElectBob(<~cak, kek, ick>) ]->
+    [ !AState($A, 'READY', <~cak, kek, ick>), !BState($B, 'IS_KS', <~cak, kek, ick>) ]
+
+/******************* End keyserver election ************************/
+
+/* Reveal the CAK */
+rule Reveal_cak:
+    [ !IsConfigured($A, $B, <~cak, kek, ick>) ]
+    --[ CakReveal(~cak) ]->
+    [ Out(~cak) ]
+
+/* Reveal the KEK */
+rule Reveal_kek:
+    [ !IsConfigured($A, $B, <~cak, kek, ick>) ]
+    --[ KekReveal(kek) ]->
+    [ Out(kek) ]
+
+/* Reveal the ICK */
+rule Reveal_ick:
+    [ !IsConfigured($A, $B, <~cak, kek, ick>) ]
+    --[ IckReveal(ick) ]->
+    [ Out(ick) ]
+
+/* Successful init trace exists */
+lemma successful_init : exists-trace
+    "Ex cak kek ick #i.
+        Init(cak, kek, ick) @ i"
+
+/* Alice and Bob cannot both be keyserver simultaneously. */
+lemma single_keyserver: all-traces
+    "
+    not(
+        Ex cak kek ick #i #j. 
+            ElectAlice(<cak, kek, ick>) @ i & ElectBob(<cak, kek, ick>) @ j 
+            & #i = #j
+     )
+    "
+
+/* Debug lemma to show a falsification of the inverse of single_keyserver lemma. */
+lemma ks_err: exists-trace
+        "
+        Ex cak kek ick #i #j. 
+            ElectAlice(<cak, kek, ick>) @ i & ElectBob(<cak, kek, ick>) @ j 
+            & #i = #j
+        "
+
+end
+
