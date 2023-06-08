@@ -89,7 +89,7 @@ lemma successful_init : exists-trace
         Init(cak, kek, ick) @ i"
 
 /* Alice and Bob cannot both be keyserver simultaneously. */
-lemma single_keyserver: all-traces
+lemma single_keyserver : all-traces
     "
     not(
         Ex cak kek ick #i #j. 
@@ -99,11 +99,20 @@ lemma single_keyserver: all-traces
     "
 
 /* Debug lemma to show a falsification of the inverse of single_keyserver lemma. */
-lemma ks_err: exists-trace
+lemma ks_err : exists-trace
         "
         Ex cak kek ick #i #j. 
             ElectAlice(<cak, kek, ick>) @ i & ElectBob(<cak, kek, ick>) @ j 
             & #i = #j
+        "
+
+/* Election can't happen before successful init. */
+lemma successful_init_and_elect : exists-trace
+        "
+        not(
+            Ex cak kek ick pA icvA #i #j.
+                Init(cak, kek, ick) @ i & SendPA(<pA, icvA>) @ j & #j < #i
+        )
         "
 
 end
