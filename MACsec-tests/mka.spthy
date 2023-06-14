@@ -158,9 +158,10 @@ rule RefreshSak:
     ]
 
 lemma debug_prop [use_induction]: exists-trace
-  "Ex cak sak #i #j.
-      DistributeSak(cak, sak) @ i &
-      SakAcknowledgement(cak, sak) @ j & 
+  "Ex cak sak #i #j #k.
+      Init(cak) @ i &
+      DistributeSak(cak, sak) @ j &
+      SakAcknowledgement(cak, sak) @ k & 
       i < j"
 
 // lemma successful_mka : exists-trace
