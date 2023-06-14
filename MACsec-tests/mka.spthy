@@ -158,7 +158,7 @@ rule RefreshSak:
     ]
 
 /* Successful completion of MKA trace exists */
-lemma successful_mka : exists-trace
+lemma successful_mka [use_induction] : exists-trace
     "Ex cak sak #i #j #k.
         Init(cak) @ i &
         DistributeSak(cak, sak) @ j & 
