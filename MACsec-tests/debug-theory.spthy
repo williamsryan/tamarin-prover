@@ -14,8 +14,8 @@ section{* Tester for MACsec stuff. *}
  *
  * Functions:   TODO
  *
- * Modeler: 	Ryan Williams
- * Date: 	    May 2023
+ * Modeler: 	  Ryan Williams
+ * Date: 	      May 2023
  *
  * Status: 	    DEVELOPMENTAL
  *
@@ -46,43 +46,47 @@ section{* Tester for MACsec stuff. *}
     in
     [ Fr(~nonce), !Cak($A, PSK), !Cak($B, PSK), !Ick($A, ICK), !Ick($B, ICK) ]
     -->
-    [ Asak(KDF(~nonce, 'sak', ~CAK)), Out(ntag), Out(~nonce) ]
+    [ Asak(KDF(~nonce, 'sak', PSK)), Out(ntag), Out(~nonce) ]
 
  rule sak_derivation:
    // Bob runs MAC function on nonce using ICK.
    let
    ntag_prime = MAC(~nonce, ICK)
    in
-   [ Asak(KDF(~nonce, 'sak', ~CAK)), In(ntag), In(~nonce) ]
+   [ Asak(KDF(~nonce, 'sak', PSK)), In(ntag), In(~nonce) ]
    -->
-   [ !Bsak(KDF(~nonce, 'sak', ~CAK)) ]
+   [ Bsak(KDF(~nonce, 'sak', PSK)) ]
 
  rule sec_send:
    // Bob sends encoded message back to Alice.
    let
    m = ~m
+   BS = KDF(~nonce, 'sak', ~CAK)
    in
    [ Fr(~m), !Bsak(KDF(~nonce, 'sak', ~CAK)) ]
    -->
-   [ Send($B, $A, senc(Bsak, m)), Out(senc(Bsak, m)) ]
+   [ Send($B, $A, senc(BS, m)), Out(senc(BS, m)) ]
    //[ senc(!Bsak, m), Out(senc(!Bsak, m))]
 
  rule sec_recv:
    // Alice reads encoded message from Bob.
-   [ !Asak(KDF(~nonce, 'sak', ~CAK)), In(m) ]
+   let
+   AS = KDF(~nonce, 'sak', PSK)
+   in
+   [ Asak(KDF(~nonce, 'sak', PSK)), In(m) ]
    -->
-   [ Receive($B, $A, sdec(Asak, m)) ]
+   [ Receive($B, $A, sdec(AS, m)) ]
 
  // Adversary rules.
- rule reveal_session_a:
-   [ !Asak(KDF(~nonce, 'sak', ~CAK)) ]
-   --[ SessionRevealA(sak) ]->
-   [ Out(Asak) ]
+//  rule reveal_session_a:
+//    [ !Asak(KDF(~nonce, 'sak', ~CAK)) ]
+//    --[ SessionRevealA(sak) ]->
+//    [ Out(Asak) ]
 
- rule reveal_session_b:
-   [ !Bsak(KDF(~nonce, 'sak', ~CAK)) ]
-   --[ SessionRevealB(sak) ]->
-   [ Out(Bsak) ]
+//  rule reveal_session_b:
+//    [ !Bsak(KDF(~nonce, 'sak', ~CAK)) ]
+//    --[ SessionRevealB(sak) ]->
+//    [ Out(Bsak) ]
 
 //  rule reveal_cak:
 //    [  ]
@@ -93,7 +97,7 @@ section{* Tester for MACsec stuff. *}
       Ex A B #i #j.
          Asak() @ #i & Bsak() @ #j
          & DY(sak) @ #j
-      // & not(Ex #r. SessionRevealA(A) | SessionRevealB(B) @ r)
+      & not(Ex #r. SessionRevealA(A) | SessionRevealB(B) @ r)
       // | (Ex #r. CakReveal(A) | CakReveal(B))
    )
    "
