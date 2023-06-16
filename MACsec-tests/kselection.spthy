@@ -2,8 +2,8 @@
 Simple MACsec Key Agreement Protocol
 ======================================
 
-Authors:    Zachary Ratliff, Ryan Williams
-Date:       May 2023
+Authors:    Ryan Williams, Zachary Ratliff
+Date:       June 2023
 
 */
 
@@ -66,22 +66,22 @@ rule Make_ks_desc_bob:
 /******************* End keyserver election ************************/
 
 /* Reveal the CAK */
-rule Reveal_cak:
-    [ !IsConfigured($A, $B, <~cak, kek, ick>) ]
-    --[ CakReveal(~cak) ]->
-    [ Out(~cak) ]
+// rule Reveal_cak:
+//     [ !IsConfigured($A, $B, <~cak, kek, ick>) ]
+//     --[ CakReveal(~cak) ]->
+//     [ Out(~cak) ]
 
-/* Reveal the KEK */
-rule Reveal_kek:
-    [ !IsConfigured($A, $B, <~cak, kek, ick>) ]
-    --[ KekReveal(kek) ]->
-    [ Out(kek) ]
+// /* Reveal the KEK */
+// rule Reveal_kek:
+//     [ !IsConfigured($A, $B, <~cak, kek, ick>) ]
+//     --[ KekReveal(kek) ]->
+//     [ Out(kek) ]
 
-/* Reveal the ICK */
-rule Reveal_ick:
-    [ !IsConfigured($A, $B, <~cak, kek, ick>) ]
-    --[ IckReveal(ick) ]->
-    [ Out(ick) ]
+// /* Reveal the ICK */
+// rule Reveal_ick:
+//     [ !IsConfigured($A, $B, <~cak, kek, ick>) ]
+//     --[ IckReveal(ick) ]->
+//     [ Out(ick) ]
 
 /* Successful init trace exists */
 lemma successful_init : exists-trace
@@ -89,7 +89,7 @@ lemma successful_init : exists-trace
         Init(cak, kek, ick) @ i"
 
 /* Alice and Bob cannot both be keyserver simultaneously. */
-lemma single_keyserver : all-traces
+lemma single_keyserver [use_induction] : all-traces
     "
     not(
         Ex cak kek ick #i #j. 
@@ -99,12 +99,12 @@ lemma single_keyserver : all-traces
     "
 
 /* Debug lemma to show a falsification of the inverse of single_keyserver lemma. */
-lemma ks_err : exists-trace
-        "
-        Ex cak kek ick #i #j. 
-            ElectAlice(<cak, kek, ick>) @ i & ElectBob(<cak, kek, ick>) @ j 
-            & #i = #j
-        "
+// lemma ks_err : exists-trace
+//         "
+//         Ex cak kek ick #i #j. 
+//             ElectAlice(<cak, kek, ick>) @ i & ElectBob(<cak, kek, ick>) @ j 
+//             & #i = #j
+//         "
 
 /* Election can't happen before successful init. */
 lemma successful_init_and_elect : exists-trace

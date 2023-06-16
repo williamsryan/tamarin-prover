@@ -162,7 +162,7 @@ lemma debug_prop [use_induction]: exists-trace
       Init(cak) @ i &
       DistributeSak(cak, sak) @ j &
       SakAcknowledgement(cak, sak) @ k & 
-      i < j"
+      i < j & j < k "
 
 // lemma successful_mka : exists-trace
 //   "Ex cak sak #i #j.
