@@ -89,13 +89,22 @@ lemma successful_init : exists-trace
         Init(cak, kek, ick) @ i"
 
 /* Alice and Bob cannot both be keyserver simultaneously. */
-lemma single_keyserver [use_induction] : all-traces
+lemma single_keyserver : all-traces
     "
     not(
         Ex cak kek ick #i #j. 
             ElectAlice(<cak, kek, ick>) @ i & ElectBob(<cak, kek, ick>) @ j 
             & #i = #j
      )
+    "
+
+/* Testing different approaches (i.e., induction, etc.).  */
+lemma KeyserverExclusion [use_induction] :
+    "
+    All cak kek ick #i #j.
+        ElectAlice(<cak, kek, ick>) @ i & ElectBob(<cak, kek, ick>) @ j
+    ==>
+       (not #i = #j)
     "
 
 /* Debug lemma to show a falsification of the inverse of single_keyserver lemma. */
