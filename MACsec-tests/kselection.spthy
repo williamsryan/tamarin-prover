@@ -99,7 +99,7 @@ lemma single_keyserver [use_induction] : all-traces
     "
 
 /* Debug lemma to show a falsification of the inverse of single_keyserver lemma. */
-// lemma ks_err : exists-trace
+// lemma ks_err [use_induction] : exists-trace
 //         "
 //         Ex cak kek ick #i #j. 
 //             ElectAlice(<cak, kek, ick>) @ i & ElectBob(<cak, kek, ick>) @ j 
