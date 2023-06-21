@@ -88,8 +88,12 @@ lemma successful_init : exists-trace
     "Ex cak kek ick #i.
         Init(cak, kek, ick) @ i"
 
-lemma order_test [use_induction]:
-    "All cak kek ick #j. ElectAlice(<cak, kek, ick>) @ j ==> (Ex #i. Init(cak, kek, ick) @ i)"
+/* Case for induction: use this lemma as an invariant that holds over entire execution. */
+lemma init_first [use_induction] :
+    "All pA icvA #i. SendPA(<pA, icvA>) @ i ==> (Ex cak kek ick #j. Init(cak, kek, ick) @ j & j < i)"
+
+// lemma order_test [use_induction]:
+//     "All cak kek ick #j. ElectAlice(<cak, kek, ick>) @ j ==> (Ex #i. Init(cak, kek, ick) @ i)"
 
 lemma ks_exclusion [use_induction]:
     "All cak kek ick #j. ElectAlice(<cak, kek, ick>) @ j ==> not(Ex #i. ElectBob(<cak, kek, ick>) @ i & #i = #j)"
