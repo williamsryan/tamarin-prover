@@ -88,15 +88,11 @@ lemma successful_init : exists-trace
     "Ex cak kek ick #i.
         Init(cak, kek, ick) @ i"
 
-lemma order_test [use_induction]:
-    "All cak kek ick #i #j.
-        (ElectAlice(<cak, kek, ick>) @i &//| 
-        // ElectBob(<cak, kek, ick>) @i & 
-        Init(cak, kek, ick) @j &
-        #i < #j)
-    ==>
-    F
-    "
+// lemma order_test [use_induction]:
+//     "All cak kek ick #j. ElectAlice(<cak, kek, ick>) @ j ==> (Ex #i. Init(cak, kek, ick) @ i & i < j)"
+
+lemma ks_exclusion [use_induction]:
+    "All cak kek ick #j. ElectAlice(<cak, kek, ick>) @ j ==> not(Ex #i. ElectBob(<cak, kek, ick>) @ i & #i = #j)"
 
 /* Alice and Bob cannot both be keyserver simultaneously. */
 lemma single_keyserver : all-traces
