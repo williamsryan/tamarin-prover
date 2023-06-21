@@ -88,6 +88,16 @@ lemma successful_init : exists-trace
     "Ex cak kek ick #i.
         Init(cak, kek, ick) @ i"
 
+lemma order_test [use_induction]:
+    "All cak kek ick #i #j.
+        (ElectAlice(<cak, kek, ick>) @i &//| 
+        // ElectBob(<cak, kek, ick>) @i & 
+        Init(cak, kek, ick) @j &
+        #i < #j)
+    ==>
+    F
+    "
+
 /* Alice and Bob cannot both be keyserver simultaneously. */
 lemma single_keyserver : all-traces
     "
@@ -99,16 +109,16 @@ lemma single_keyserver : all-traces
     "
 
 /* Testing different approaches (i.e., induction, etc.).  */
-lemma KeyserverExclusion [use_induction] :
-    "
-    All cak kek ick #i #j.
-        ElectAlice(<cak, kek, ick>) @ i & ElectBob(<cak, kek, ick>) @ j
-    ==>
-       (not #i = #j)
-    "
+// lemma KeyserverExclusion [use_induction] :
+//     "
+//     All cak kek ick #i #j.
+//         ElectAlice(<cak, kek, ick>) @ i & ElectBob(<cak, kek, ick>) @ j
+//     ==>
+//        (not #i = #j)
+//     "
 
 /* Debug lemma to show a falsification of the inverse of single_keyserver lemma. */
-// lemma ks_err [use_induction] : exists-trace
+// lemma ks_err [use_induction]: exists-trace
 //         "
 //         Ex cak kek ick #i #j. 
 //             ElectAlice(<cak, kek, ick>) @ i & ElectBob(<cak, kek, ick>) @ j 
@@ -116,13 +126,13 @@ lemma KeyserverExclusion [use_induction] :
 //         "
 
 /* Election can't happen before successful init. */
-lemma successful_init_and_elect : exists-trace
-        "
-        not(
-            Ex cak kek ick pA icvA #i #j.
-                Init(cak, kek, ick) @ i & SendPA(<pA, icvA>) @ j & #j < #i
-        )
-        "
+// lemma successful_init_and_elect : exists-trace
+//         "
+//         not(
+//             Ex cak kek ick pA icvA #i #j.
+//                 Init(cak, kek, ick) @ i & SendPA(<pA, icvA>) @ j & #j < #i
+//         )
+//         "
 
 end
 
