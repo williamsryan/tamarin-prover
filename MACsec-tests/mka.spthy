@@ -157,18 +157,25 @@ rule RefreshSak:
     ]
 
 /* Turn successful_mka into set of inductive proofs. */
-lemma init_first [use_induction]:
+lemma init_first [use_induction, reuse]:
       "All cak sak #i. DistributeSak(cak, sak) @ i ==> (Ex cak #j. Init(cak) @ j & j < i)"
 
-lemma distsak_next [use_induction]:
+lemma distsak_next [use_induction, reuse]:
       "All cak sak #i. SakAcknowledgement(cak, sak) @ i ==> (Ex cak sak #j. DistributeSak(cak, sak) @ j & j < i)"
 
 /* Successful completion of MKA trace exists */
-// lemma successful_mka: exists-trace //[hide_lemma=refresh_before_dist]
+// lemma successful_mka:  exists-trace//[hide_lemma=refresh_before_dist]
 //     "Ex cak sak #i #j #k.
 //         Init(cak) @ i &
-//         DistributeSak(cak, sak) @ j & 
+//         DistributeSak(cak, sak) @ j &
 //         SakAcknowledgement(cak, sak) @ k"
+
+lemma successful_mka: exists-trace
+    "Ex cak sak #i #j #k.
+        Init(cak) @ i &
+        DistributeSak(cak, sak) @ j &
+        RedistributeSak(cak, sak) @ k &
+        i < j & j < k"
 
 /* CAK remains secret unless there was a CAK reveal */
 lemma cak_secrecy[reuse]:
