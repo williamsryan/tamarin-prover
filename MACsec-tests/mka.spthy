@@ -104,32 +104,8 @@ rule ResendAck:
       Out(mac(newNonce, kdf('ick', ~cak)))
     ]
 
-/* Reveal the SAK */
-// rule Reveal_sak:
-//     [ !ASak(~cak, ~sak) ]
-//   --[ SakReveal(~cak, ~sak) ]->
-//     [ Out(~sak) ]
 
-// /* Reveal the CAK */
-// rule Reveal_cak:
-//     [ !IsConfigured(~cak) ]
-//   --[ CakReveal(~cak) ]->
-//     [ Out(~cak) ]
-
-// /* Reveal the KEK */
-// rule Reveal_kek:
-//     [ !IsConfigured(~cak) ]
-//   --[ KekReveal(~cak) ]->
-//     [ Out(kdf('kek', ~cak)) ]
-
-/* Reveal the ICK */
-// rule Reveal_ick:
-//     [ !IsConfigured(~cak) ]
-//   --[ IckReveal(~cak) ]->
-//     [ Out(kdf('ick', ~cak)) ]
-
-/* Alice receives a SAK acknowledgement from Bob */
-// TODO: this works, but breaks when RefreshSak is present.
+/* Alice receives a SAK acknowledgement from Bob */ 
 rule ReceiveAck: 
     let 
       nonce = counter(n) 
@@ -145,8 +121,31 @@ rule ReceiveAck:
       !AState(~cak, 'SESSION', newNonce) 
     ]
 
+/* Reveal the SAK */
+rule Reveal_sak:
+    [ !ASak(~cak, ~sak) ]
+  --[ SakReveal(~cak, ~sak) ]->
+    [ Out(~sak) ]
+
+/* Reveal the CAK */
+rule Reveal_cak:
+    [ !IsConfigured(~cak) ]
+  --[ CakReveal(~cak) ]->
+    [ Out(~cak) ]
+
+/* Reveal the KEK */
+rule Reveal_kek:
+    [ !IsConfigured(~cak) ]
+  --[ KekReveal(~cak) ]->
+    [ Out(kdf('kek', ~cak)) ]
+
+/* Reveal the ICK */
+rule Reveal_ick:
+    [ !IsConfigured(~cak) ]
+  --[ IckReveal(~cak) ]->
+    [ Out(kdf('ick', ~cak)) ]
+
 /* Allow SAK refreshing by the key server */
-// TODO: long trace culprit right now.
 rule RefreshSak:
     [
       !AState(~cak, 'SESSION', nonce)
@@ -157,65 +156,61 @@ rule RefreshSak:
       DistributeNewKey(~cak)
     ]
 
-lemma debug_prop [use_induction]: exists-trace
-  "Ex cak sak #i #j #k.
-      Init(cak) @ i &
-      DistributeSak(cak, sak) @ j &
-      SakAcknowledgement(cak, sak) @ k & 
-      i < j & j < k "
+/* Use inductive lemma to hold that SAK refresh is always after SAK acknowledgement. */
+lemma refresh_after_ack [use_induction] :
+    ""
 
-// lemma successful_mka : exists-trace
-//   "Ex cak sak #i #j.
-//       Init(cak) @ i &
-//       DistributeSak(cak, sak) @ j "
+/* Use inductive lemma to hold that SAK refresh is always before distribute SAK. */
+lemma refresh_before_dist [use_induction] :
+    ""
 
 /* Successful completion of MKA trace exists */
-// lemma successful_mka : exists-trace
-//     "Ex cak sak #i #j #k.
-//         Init(cak) @ i &
-//         DistributeSak(cak, sak) @ j 
-//         SakAcknowledgement(cak, sak) @ k"
+lemma successful_mka : exists-trace
+    "Ex cak sak #i #j #k.
+        Init(cak) @ i &
+        DistributeSak(cak, sak) @ j & 
+        SakAcknowledgement(cak, sak) @ k"
 
 /* CAK remains secret unless there was a CAK reveal */
-// lemma cak_secrecy[reuse]:
-//     "All cak #i #j.
-//         Init(cak) @ i
-//         & K(cak) @ j ==> (Ex #r. CakReveal(cak) @ r)"
+lemma cak_secrecy[reuse]:
+    "All cak #i #j.
+        Init(cak) @ i
+        & K(cak) @ j ==> (Ex #r. CakReveal(cak) @ r)"
 
-// /* CAK remains secret unless there was a CAK reveal */
-// lemma kek_secrecy[reuse]:
-//     "All cak #i #j.
-//         Init(cak) @ i
-//         & K(kdf('kek', cak)) @ j ==> ((Ex #r. CakReveal(cak) @ r) | (Ex #t. KekReveal(cak) @ t))"
+/* CAK remains secret unless there was a CAK reveal */
+lemma kek_secrecy[reuse]:
+    "All cak #i #j.
+        Init(cak) @ i
+        & K(kdf('kek', cak)) @ j ==> ((Ex #r. CakReveal(cak) @ r) | (Ex #t. KekReveal(cak) @ t))"
 
-// /* CAK remains secret unless there was a CAK reveal */
-// lemma ick_secrecy[reuse]:
-//     "All cak #i #j.
-//         Init(cak) @ i
-//         & K(kdf('ick', cak)) @ j ==> ((Ex #r. CakReveal(cak) @ r) | (Ex #t. IckReveal(cak) @ t))"
+/* CAK remains secret unless there was a CAK reveal */
+lemma ick_secrecy[reuse]:
+    "All cak #i #j.
+        Init(cak) @ i
+        & K(kdf('ick', cak)) @ j ==> ((Ex #r. CakReveal(cak) @ r) | (Ex #t. IckReveal(cak) @ t))"
 
 
-// /* SAK remains secret unless there was a CAK reveal */
-// lemma sak_secrecy:
-//     "All cak sak #i #j #k.
-//         Init(cak) @ i
-//         & DistributeSak(cak, sak) @ j
-//         & K(sak) @ k 
-//         ==> ((Ex #r. SakReveal(cak, sak) @ r) | (Ex #t. CakReveal(cak) @ t) | (Ex #u. KekReveal(cak) @ u))"
+/* SAK remains secret unless there was a CAK reveal */
+lemma sak_secrecy:
+    "All cak sak #i #j #k.
+        Init(cak) @ i
+        & DistributeSak(cak, sak) @ j
+        & K(sak) @ k 
+        ==> ((Ex #r. SakReveal(cak, sak) @ r) | (Ex #t. CakReveal(cak) @ t) | (Ex #u. KekReveal(cak) @ u))"
 
-// /* Alice will never distribute the same SAK twice */
-// lemma no_sak_reuse[reuse]:
-//     "not(
-//         Ex cak sak #i #j. DistributeSak(cak, sak) @ i
-//         & DistributeSak(cak, sak) @ j
-//         & i < j
-//     )"
+/* Alice will never distribute the same SAK twice */
+lemma no_sak_reuse[reuse]:
+    "not(
+        Ex cak sak #i #j. DistributeSak(cak, sak) @ i
+        & DistributeSak(cak, sak) @ j
+        & i < j
+    )"
 
-// /* Integrity of SAK */
-// /* If Bob receives a SAK, then Alice sent that SAK -- unless there was an ICK or CAK reveal at some earlier point */
-// lemma sak_integrity[reuse]:
-//     "(All cak sak #i. SakAcknowledgement(cak, sak) @ i
-//     ==> ((Ex #a. DistributeSak(cak, sak) @ a & a < i) | (Ex #t. IckReveal(cak) @ t & t < i) | (Ex #r. CakReveal(cak) @ r & r < i)))"
+/* Integrity of SAK */
+/* If Bob receives a SAK, then Alice sent that SAK -- unless there was an ICK or CAK reveal at some earlier point */
+lemma sak_integrity[reuse]:
+    "(All cak sak #i. SakAcknowledgement(cak, sak) @ i
+    ==> ((Ex #a. DistributeSak(cak, sak) @ a & a < i) | (Ex #t. IckReveal(cak) @ t & t < i) | (Ex #r. CakReveal(cak) @ r & r < i)))"
 
 end
 
