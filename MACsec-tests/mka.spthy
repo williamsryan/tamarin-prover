@@ -165,11 +165,11 @@ lemma refresh_before_dist [use_induction] :
     "All cak #i. SakRefresh(cak) @i ==> (Ex cak sak #j. DistributeSak(cak, sak) @j & j < i)"
 
 /* Successful completion of MKA trace exists */
-// lemma successful_mka : exists-trace
-//     "Ex cak sak #i #j #k.
-//         Init(cak) @ i &
-//         DistributeSak(cak, sak) @ j & 
-//         SakAcknowledgement(cak, sak) @ k"
+lemma successful_mka : exists-trace
+    "Ex cak sak #i #j #k.
+        Init(cak) @ i &
+        DistributeSak(cak, sak) @ j & 
+        SakAcknowledgement(cak, sak) @ k"
 
 /* CAK remains secret unless there was a CAK reveal */
 lemma cak_secrecy[reuse]:
