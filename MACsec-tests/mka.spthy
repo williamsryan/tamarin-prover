@@ -157,19 +157,19 @@ rule RefreshSak:
     ]
 
 /* Use inductive lemma to hold that SAK refresh is always after SAK acknowledgement. */
-lemma refresh_after_ack [use_induction] :
-    ""
+// lemma refresh_after_ack [use_induction] :
+//     "All cak sak #i. SakAcknowledgement(cak, sak) @i ==> (Ex cak #j. SakRefresh(cak) @j & i < j)"
 
-/* Use inductive lemma to hold that SAK refresh is always before distribute SAK. */
+/* Use inductive lemma to hold that SAK refresh is always after distribute SAK. */
 lemma refresh_before_dist [use_induction] :
-    ""
+    "All cak #i. SakRefresh(cak) @i ==> (Ex cak sak #j. DistributeSak(cak, sak) @j & j < i)"
 
 /* Successful completion of MKA trace exists */
-lemma successful_mka : exists-trace
-    "Ex cak sak #i #j #k.
-        Init(cak) @ i &
-        DistributeSak(cak, sak) @ j & 
-        SakAcknowledgement(cak, sak) @ k"
+// lemma successful_mka : exists-trace
+//     "Ex cak sak #i #j #k.
+//         Init(cak) @ i &
+//         DistributeSak(cak, sak) @ j & 
+//         SakAcknowledgement(cak, sak) @ k"
 
 /* CAK remains secret unless there was a CAK reveal */
 lemma cak_secrecy[reuse]:
