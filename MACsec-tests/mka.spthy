@@ -157,10 +157,10 @@ rule RefreshSak:
     ]
 
 /* Turn successful_mka into set of inductive proofs. */
-lemma init_first [use_induction, reuse]:
+lemma init_first [use_induction]:
       "All cak sak #i. DistributeSak(cak, sak) @ i ==> (Ex cak #j. Init(cak) @ j & j < i)"
 
-lemma distsak_next [use_induction, reuse]:
+lemma distsak_next [use_induction]:
       "All cak sak #i. SakAcknowledgement(cak, sak) @ i ==> (Ex cak sak #j. DistributeSak(cak, sak) @ j & j < i)"
 
 /* Successful completion of MKA trace exists */
