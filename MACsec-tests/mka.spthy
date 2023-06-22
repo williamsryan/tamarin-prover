@@ -156,21 +156,19 @@ rule RefreshSak:
       DistributeNewKey(~cak)
     ]
 
-/* Use inductive lemma to hold that SAK refresh is always after SAK acknowledgement. */
-// lemma refresh_after_ack [use_induction] :
-//     "All cak sak #i. SakAcknowledgement(cak, sak) @i ==> (Ex cak #j. SakRefresh(cak) @j & i < j)"
+/* Turn successful_mka into set of inductive proofs. */
+lemma init_first [use_induction]:
+      "All cak sak #i. DistributeSak(cak, sak) @ i ==> (Ex cak #j. Init(cak) @ j & j < i)"
 
-/* Use inductive lemma to hold that SAK refresh is always after distribute SAK. */
-lemma refresh_before_dist [use_induction, reuse] :
-    "All cak #i. SakRefresh(cak) @i ==> (Ex cak sak #j. DistributeSak(cak, sak) @j & j < i)"
+lemma distsak_next [use_induction]:
+      "All cak sak #i. SakAcknowledgement(cak, sak) @ i ==> (Ex cak sak #j. DistributeSak(cak, sak) @ j & j < i)"
 
 /* Successful completion of MKA trace exists */
-lemma successful_mka : exists-trace
-    "Ex cak sak #i #j #k.
-        Init(cak) @ i &
-        DistributeSak(cak, sak) @ j & 
-        SakAcknowledgement(cak, sak) @ k &
-        i < j & j < k"
+// lemma successful_mka: exists-trace //[hide_lemma=refresh_before_dist]
+//     "Ex cak sak #i #j #k.
+//         Init(cak) @ i &
+//         DistributeSak(cak, sak) @ j & 
+//         SakAcknowledgement(cak, sak) @ k"
 
 /* CAK remains secret unless there was a CAK reveal */
 lemma cak_secrecy[reuse]:
@@ -192,6 +190,7 @@ lemma ick_secrecy[reuse]:
 
 
 /* SAK remains secret unless there was a CAK reveal */
+// This is one that doesn't terminate.
 lemma sak_secrecy:
     "All cak sak #i #j #k.
         Init(cak) @ i
@@ -209,6 +208,7 @@ lemma no_sak_reuse[reuse]:
 
 /* Integrity of SAK */
 /* If Bob receives a SAK, then Alice sent that SAK -- unless there was an ICK or CAK reveal at some earlier point */
+// This is one that doesn't terminate.
 lemma sak_integrity[reuse]:
     "(All cak sak #i. SakAcknowledgement(cak, sak) @ i
     ==> ((Ex #a. DistributeSak(cak, sak) @ a & a < i) | (Ex #t. IckReveal(cak) @ t & t < i) | (Ex #r. CakReveal(cak) @ r & r < i)))"
